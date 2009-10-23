@@ -180,7 +180,7 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 				}
 				else
 				{
-					DEBUG_ERROR("Errow writing block type.")
+					DEBUG_ERROR("Error writing block type.")
 				}
 			}
 
@@ -196,7 +196,7 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 				}
 				else
 				{
-					DEBUG_ERROR("Errow writing block size.")
+					DEBUG_ERROR("Error writing block size.")
 				}
 			}
 
@@ -211,7 +211,7 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 				}
 				else
 				{
-					DEBUG_ERROR("Errow writing block data.")
+					DEBUG_ERROR("Error writing block data.")
 				}
 			}
 
