@@ -12,6 +12,7 @@ private:
 
 public:
 	Client();
+	Client(class BlockSocket *p_pinSocket);
 	~Client();
 
 	bool Connect(std::string m_strAddress, unsigned short p_sPort);

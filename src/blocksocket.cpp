@@ -26,6 +26,26 @@ BlockSocket::BlockSocket()
 	pthread_mutex_init(&m_iReadMutex, NULL);
 }
 
+BlockSocket::BlockSocket(NLsocket p_inSocket)
+{
+	// Initialize HawkNL to make sure the destructor doesn't cause problems
+	if(!nlInit())
+	{
+		DEBUG_ERROR("Could not init HawkNL.")
+	}
+
+	m_inSocket = p_inSocket;
+	m_bConnected = true;
+	m_bDisconnect = false;
+
+	pthread_mutex_init(&m_iWriteMutex, NULL);
+	pthread_mutex_init(&m_iReadMutex, NULL);
+
+	// Start worker threads
+	pthread_create(&m_iWriteThread, NULL, BlockSocket::WriteLoop, (void*) this);
+	pthread_create(&m_iReadThread, NULL, BlockSocket::ReadLoop, (void*) this);
+}
+
 BlockSocket::~BlockSocket()
 {
 	// Close socket

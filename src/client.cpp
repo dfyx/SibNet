@@ -9,6 +9,11 @@ Client::Client()
 	m_pinSocket = new BlockSocket();
 }
 
+Client::Client(BlockSocket *p_pinSocket)
+{
+	m_pinSocket = p_pinSocket;
+}
+
 Client::~Client()
 {
 	delete m_pinSocket;

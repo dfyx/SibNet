@@ -181,6 +181,14 @@
 				RelativePath=".\src\client.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\src\listenersocket.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\server.cpp"
+				>
+			</File>
 			<Filter
 				Name="blocks"
 				>
@@ -240,11 +248,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\listenersocket.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\networking.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\stdint.h"
+				RelativePath=".\include\pstdint.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\server.h"
 				>
 			</File>
 			<Filter
