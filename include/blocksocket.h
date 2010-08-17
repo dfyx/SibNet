@@ -4,6 +4,7 @@
 #include <blocks/block.h>
 #include <nl.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <queue>
 #include <string>
 
@@ -16,6 +17,7 @@ private:
 	pthread_t m_iWriteThread, m_iReadThread;
 
 	pthread_mutex_t m_iWriteMutex, m_iReadMutex;
+	sem_t m_iWriteSemaphore, m_iReadSemaphore;
 
 	bool m_bConnected, m_bDisconnect;
 public:

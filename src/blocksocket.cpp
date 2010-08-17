@@ -1,8 +1,10 @@
 #include <blocksocket.h>
 #include <sched.h>
+#include <semaphore.h>
 
 #ifdef _DEBUG
 #include <iostream>
+#include <windows.h>
 #endif
 
 using namespace std;
@@ -24,6 +26,8 @@ BlockSocket::BlockSocket()
 
 	pthread_mutex_init(&m_iWriteMutex, NULL);
 	pthread_mutex_init(&m_iReadMutex, NULL);
+	sem_init(&m_iWriteSemaphore, 0, 0);
+	sem_init(&m_iReadSemaphore, 0, 0);
 }
 
 BlockSocket::BlockSocket(NLsocket p_inSocket)
@@ -44,6 +48,8 @@ BlockSocket::BlockSocket(NLsocket p_inSocket)
 	// Start worker threads
 	pthread_create(&m_iWriteThread, NULL, BlockSocket::WriteLoop, (void*) this);
 	pthread_create(&m_iReadThread, NULL, BlockSocket::ReadLoop, (void*) this);
+	sem_init(&m_iWriteSemaphore, 0, 0);
+	sem_init(&m_iReadSemaphore, 0, 0);
 }
 
 BlockSocket::~BlockSocket()
@@ -58,6 +64,8 @@ BlockSocket::~BlockSocket()
 
 	pthread_mutex_destroy(&m_iWriteMutex);
 	pthread_mutex_destroy(&m_iReadMutex);
+	sem_destroy(&m_iWriteSemaphore);
+	sem_destroy(&m_iReadSemaphore);
 
 	// This is okay, even for multiple sockets. HawkNL has an internal counter
 	nlShutdown();
@@ -123,22 +131,27 @@ void BlockSocket::WriteBlock(Block *p_pinBlock)
 	pthread_mutex_lock(&m_iWriteMutex);
 	m_inWriteQueue.push(p_pinBlock);
 	pthread_mutex_unlock(&m_iWriteMutex);
+	sem_post(&m_iWriteSemaphore);
 }
 
 Block* BlockSocket::ReadBlock(bool p_bWait)
 {
 	Block *pinResult = NULL;
-	do
+	if(p_bWait)
 	{
+		sem_wait(&m_iReadSemaphore);
 		pthread_mutex_lock(&m_iReadMutex);
-		if(!m_inReadQueue.empty())
-		{
-			pinResult = m_inReadQueue.front();
-			m_inReadQueue.pop();
-		}
+		pinResult = m_inReadQueue.front();
+		m_inReadQueue.pop();
 		pthread_mutex_unlock(&m_iReadMutex);
 	}
-	while(pinResult == NULL && p_bWait == true);
+	else if(sem_trywait(&m_iReadSemaphore) == 0)
+	{
+		pthread_mutex_lock(&m_iReadMutex);
+		pinResult = m_inReadQueue.front();
+		m_inReadQueue.pop();
+		pthread_mutex_unlock(&m_iReadMutex);
+	}
 
 	return pinResult;
 }
@@ -146,21 +159,22 @@ Block* BlockSocket::ReadBlock(bool p_bWait)
 void *BlockSocket::WriteLoop(void *p_pinSocket)
 {
 #ifdef _DEBUG
-	cout << "- Starting write loop." << endl;
+	cout << "- Starting write loop: " << endl;
 #endif
 	BlockSocket *pinSocket = (BlockSocket*) p_pinSocket;
 	pthread_t iReadThread = pinSocket->m_iReadThread;
 
-	while(pinSocket->IsConnected())
+	while(true)
 	{
 		Block *pinBlock = NULL;
+
+		// Wait until there is something in the queue
+		sem_wait(&pinSocket->m_iWriteSemaphore);
 		pthread_mutex_lock(&pinSocket->m_iWriteMutex);
-		if(!pinSocket->m_inWriteQueue.empty())
-		{
-			pinBlock = pinSocket->m_inWriteQueue.front();
-			pinSocket->m_inWriteQueue.pop();
-		}
+		pinBlock = pinSocket->m_inWriteQueue.front();
+		pinSocket->m_inWriteQueue.pop();
 		pthread_mutex_unlock(&pinSocket->m_iWriteMutex);
+		
 
 		if(pinBlock == NULL)
 		{
@@ -202,6 +216,12 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 				{
 					DEBUG_ERROR("Error writing block type.")
 				}
+
+				// Could not write everything: wait
+				if(iWritten < 2)
+				{
+					sched_yield();
+				}
 			}
 
 			// Write size
@@ -218,6 +238,12 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 				{
 					DEBUG_ERROR("Error writing block size.")
 				}
+
+				// Could not write everything: wait
+				if(iWritten < 2)
+				{
+					sched_yield();
+				}
 			}
 
 			// Write data
@@ -233,13 +259,17 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 				{
 					DEBUG_ERROR("Error writing block data.")
 				}
+
+				// Could not write everything: wait
+				if(iWritten < iSize)
+				{
+					sched_yield();
+				}
 			}
 
 			// Clean up
 			delete pcBuffer;
 			delete pinBlock;
-
-			sched_yield();
 		}
 	}
 
@@ -248,7 +278,10 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 
 void *BlockSocket::ReadLoop(void *p_pinSocket)
 {
-	BlockSocket *pinSocket = new BlockSocket(); //(BlockSocket*) p_pinSocket;
+#ifdef _DEBUG
+	cout << "- Starting read loop." << endl;
+#endif
+	BlockSocket *pinSocket = (BlockSocket*) p_pinSocket;
 
 	// TODO: stop thread if socket is disconnected
 	while(pinSocket->IsConnected())
@@ -258,7 +291,16 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 		uint16_t sType;
 		while(iRead < 2)
 		{
-			iRead += nlRead(pinSocket->m_inSocket, &sType + iRead, 2 - iRead);
+#ifdef _DEBUG
+			cout << "- Starting to read type." << endl;
+#endif
+			iRead = nlRead(pinSocket->m_inSocket, &sType + iRead, 2 - iRead);
+
+			// Could not read everything: wait
+			if(iRead < 2)
+			{
+				sched_yield();
+			}
 		}
 		sType = nlSwaps(sType);
 
@@ -267,7 +309,16 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 		uint16_t sSize;
 		while(iRead < 2)
 		{
+#ifdef _DEBUG
+			cout << "- Starting to read size." << endl;
+#endif
 			iRead += nlRead(pinSocket->m_inSocket, &sSize + iRead, 2 - iRead);
+
+			// Could not read everything: wait
+			if(iRead < 2)
+			{
+				sched_yield();
+			}
 		}
 		size_t iSize = nlSwaps(sSize);
 
@@ -276,7 +327,16 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 		iRead = 0;
 		while(iRead < iSize)
 		{
+#ifdef _DEBUG
+			cout << "- Starting to read data." << endl;
+#endif
 			iRead += nlRead(pinSocket->m_inSocket, pcBuffer + iRead, iSize - iRead);
+
+			// Could not read everything: wait
+			if(iRead < iSize)
+			{
+				sched_yield();
+			}
 		}
 
 		// Convert
@@ -287,6 +347,7 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 		pthread_mutex_lock(&pinSocket->m_iReadMutex);
 		pinSocket->m_inReadQueue.push(pinBlock);
 		pthread_mutex_unlock(&pinSocket->m_iReadMutex);
+		sem_post(&pinSocket->m_iReadSemaphore);
 
 		// Clean up
 		delete pcBuffer;

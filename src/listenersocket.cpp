@@ -112,6 +112,8 @@ void *ListenerSocket::ListenLoop(void *p_pinSocket)
 		{
 			DEBUG_ERROR("Failed to accept")
 		}
+
+		sched_yield();
 	}
 
 	return NULL;
