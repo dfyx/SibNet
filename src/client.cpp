@@ -33,3 +33,8 @@ void Client::SendBlock(Block *p_pinBlock)
 {
 	m_pinSocket->WriteBlock(p_pinBlock);
 }
+
+Block* Client::ReceiveBlock(bool p_bWait)
+{
+	return m_pinSocket->ReadBlock(p_bWait);
+}

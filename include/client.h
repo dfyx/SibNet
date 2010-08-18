@@ -1,14 +1,21 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+
 #include <blocks/block.h>
 #include <networking.h>
+#include <blocksocket.h>
 #include <string>
 
-class DLLDIR Client
+#include <initializable.h>
+
+
+class DLLDIR Client : public Initializable
 {
-private:
-	class BlockSocket *m_pinSocket;
+protected:
+	class BlockSocket* m_pinSocket;
+
+	virtual void Init() {}
 
 public:
 	Client();
@@ -19,6 +26,7 @@ public:
 	void Disconnect();
 
 	void SendBlock(Block* p_pinBlock);
+	Block* ReceiveBlock(bool p_bWait = true);
 };
 
 #endif // CLIENT_H

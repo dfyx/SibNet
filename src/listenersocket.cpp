@@ -17,8 +17,7 @@ ListenerSocket::ListenerSocket()
 
 	m_inSocket = NL_INVALID;
 
-	m_pAddClientCallback = NULL;
-	m_pAddClientParam = NULL;
+	m_pAddClientSocketCB = NULL;
 
 	pthread_mutex_init(&m_iClientMutex, NULL);
 }
@@ -30,6 +29,7 @@ ListenerSocket::~ListenerSocket()
 
 	if(IsListening())
 	{
+		StopListening();
 		pthread_join(m_iListenThread, NULL);
 	}
 
@@ -69,19 +69,24 @@ bool ListenerSocket::IsListening()
 	return m_bListening;
 }
 
-void ListenerSocket::AddClient(BlockSocket *p_pinSocket)
+void ListenerSocket::StopListening()
+{
+	m_bListening = false;
+}
+
+void ListenerSocket::AddBlockSocket(BlockSocket *p_pinSocket)
 {
 	pthread_mutex_lock(&m_iClientMutex);
 	m_vClients.push_back(p_pinSocket);
 	pthread_mutex_unlock(&m_iClientMutex);
 	
-	if(m_pAddClientCallback != NULL)
+	if(m_pAddClientSocketCB != NULL)
 	{
-		m_pAddClientCallback(p_pinSocket, m_pAddClientParam);
+		m_pAddClientSocketCB->OnAddBlockSocket(p_pinSocket);
 	}
 }
 
-vector<BlockSocket*> ListenerSocket::GetClients()
+vector<BlockSocket*> ListenerSocket::GetBlockSockets()
 {
 	pthread_mutex_lock(&m_iClientMutex);
 	vector<BlockSocket*> vTemp = m_vClients;
@@ -89,11 +94,9 @@ vector<BlockSocket*> ListenerSocket::GetClients()
 	return vTemp;
 }
 
-void ListenerSocket::SetAddClientCallback(void (*p_pAddClientCallback)(BlockSocket*, void*),
-										  void *p_pAddClientParam)
+void ListenerSocket::SetAddClientSocketCB(AddClientSocketCallback* p_pAddClientSocketCB)
 {
-	m_pAddClientCallback = p_pAddClientCallback;
-	m_pAddClientParam = p_pAddClientParam;
+	m_pAddClientSocketCB = p_pAddClientSocketCB;
 }
 
 void *ListenerSocket::ListenLoop(void *p_pinSocket)
@@ -105,7 +108,7 @@ void *ListenerSocket::ListenLoop(void *p_pinSocket)
 		NLsocket inSocket = nlAcceptConnection(pinListener->m_inSocket);
 		if(inSocket != NL_INVALID)
 		{
-			pinListener->AddClient(new BlockSocket(inSocket));
+			pinListener->AddBlockSocket(new BlockSocket(inSocket));
 			DEBUG_NOTICE("Accepted new connection.")
 		}
 		else if(nlGetError() != NL_NO_PENDING)

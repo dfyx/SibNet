@@ -59,6 +59,7 @@ BlockSocket::~BlockSocket()
 
 	if(IsConnected())
 	{
+		Disconnect();
 		pthread_join(m_iWriteThread, NULL);
 	}
 
@@ -159,12 +160,14 @@ Block* BlockSocket::ReadBlock(bool p_bWait)
 void *BlockSocket::WriteLoop(void *p_pinSocket)
 {
 #ifdef _DEBUG
-	cout << "- Starting write loop: " << endl;
+	cout << "- Starting write loop." << endl;
+
 #endif
 	BlockSocket *pinSocket = (BlockSocket*) p_pinSocket;
 	pthread_t iReadThread = pinSocket->m_iReadThread;
 
-	while(true)
+	while(pinSocket->IsConnected())
+
 	{
 		Block *pinBlock = NULL;
 
@@ -294,7 +297,7 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 #ifdef _DEBUG
 			cout << "- Starting to read type." << endl;
 #endif
-			iRead = nlRead(pinSocket->m_inSocket, &sType + iRead, 2 - iRead);
+			iRead += nlRead(pinSocket->m_inSocket, &sType + iRead, 2 - iRead);
 
 			// Could not read everything: wait
 			if(iRead < 2)

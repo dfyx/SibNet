@@ -5,6 +5,9 @@
 #include <blocks/block.h>
 #include <vector>
 
+template class DLLDIR std::allocator<Block*>;
+template class DLLDIR std::vector<Block*>;
+
 class DLLDIR ComplexBlock: public Block
 {
   // Associations

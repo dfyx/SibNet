@@ -3,21 +3,29 @@
 
 #include <blocks/block.h>
 #include <networking.h>
-#include <client.h>
+#include <listenersocket.h>
 #include <string>
+#include <vector>
 
-class DLLDIR Server
+
+
+class DLLDIR Server : public ListenerSocket::AddClientSocketCallback
 {
 private:
-	class ListenerSocket *m_pinSocket;
+	class ListenerSocket* m_pinSocket;
+
+protected:
+	virtual void OnAddBlockSocket(BlockSocket* p_pinSocket) {}
 
 public:
 	Server();
 	~Server();
 
-	bool Listen(unsigned short p_sPort);
+	std::vector<BlockSocket*> GetBlockSockets();
 
-	virtual void OnAccept(Client *p_pinClient);
+	bool Listen(unsigned short p_sPort);
 };
+
+
 
 #endif // SERVER_H

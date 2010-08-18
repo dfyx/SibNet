@@ -117,6 +117,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="./include;$(SolutionDir)/HawkNL/include;$(SolutionDir)/pthread/include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NETWORKING_EXPORTS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -135,7 +136,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="wsock32.lib pthreadVCE2.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="$(OutDir)"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -173,6 +176,14 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath=".\src\basic_clients.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\basic_servers.cpp"
+				>
+			</File>
 			<File
 				RelativePath=".\src\blocksocket.cpp"
 				>
@@ -232,6 +243,14 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\include\basic_clients.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\basic_servers.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\blockinterpreter.h"
 				>
 			</File>
@@ -245,6 +264,10 @@
 			</File>
 			<File
 				RelativePath=".\include\exceptions.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\initializable.h"
 				>
 			</File>
 			<File

@@ -8,8 +8,21 @@
 #include <pthread.h>
 #include <vector>
 
+
+
 class ListenerSocket
 {
+public:
+	// callback definition, as class
+	class AddClientSocketCallback
+	{
+		friend ListenerSocket;
+
+	private:
+		virtual void OnAddBlockSocket(BlockSocket*) = 0;
+	};
+
+
 private:
 	bool m_bListening;
 
@@ -18,23 +31,24 @@ private:
 
 	pthread_mutex_t m_iClientMutex;
 
-	void (*m_pAddClientCallback)(BlockSocket*, void*);
-	void *m_pAddClientParam;
+	AddClientSocketCallback* m_pAddClientSocketCB;
 
 	std::vector<BlockSocket*> m_vClients;
+
+	static void* ListenLoop(void* p_pinSocket);
+
+
 public:
 	ListenerSocket();
 	~ListenerSocket();
 
 	bool Listen(uint16_t p_sPort);
 	bool IsListening();
+	void StopListening();
 
-	void AddClient(BlockSocket *p_pinSocket);
-	std::vector<BlockSocket*> GetClients();
-	void SetAddClientCallback(void (*p_pAddClientCallback)(BlockSocket*, void*),
-		void *p_pAddClientParam);
-
-	static void *ListenLoop(void *p_pinSocket);
+	void AddBlockSocket(BlockSocket* p_pinSocket);
+	std::vector<BlockSocket*> GetBlockSockets();
+	void SetAddClientSocketCB(AddClientSocketCallback* p_pAddClientSocketCB);
 };
 
 #endif // LISTENERSOCKET_H
