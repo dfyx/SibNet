@@ -52,7 +52,7 @@ void* Client_Events::ReadLoop(void* p_pClient)
 		pinClient->OnReceive(pinClient->m_pinSocket->ReadBlock(true));
 		
 		// TODO: ....
-		Sleep(100);
+		//Sleep(100);
 		//sched_yield();
 	}
 

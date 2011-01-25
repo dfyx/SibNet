@@ -1,0 +1,17 @@
+#ifndef STDINT_WRAP_H
+#define STDINT_WRAP_H
+
+#cmakedefine CMAKE_HAVE_CSTDINT
+#cmakedefine CMAKE_HAVE_STDINT_H
+
+#ifdef CMAKE_HAVE_CSTDINT
+#include <cstdint>
+#else
+	#ifdef CMAKE_HAVE_STDINT_H
+	#include <stdint.h>
+	#else
+	#include <pstdint.h>
+	#endif
+#endif
+
+#endif // STDINT_WRAP_H

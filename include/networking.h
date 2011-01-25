@@ -2,9 +2,17 @@
 #define NETWORKING_H
 
 #ifdef NETWORKING_EXPORTS
-   #define DLLDIR  __declspec(dllexport)   // export DLL information
+    #ifdef WIN_32
+    #define DLLDIR  __declspec(dllexport)   // export DLL information
+    #else
+    #define DLLDIR export
+    #endif
 #else
-   #define DLLDIR  __declspec(dllimport)   // import DLL information
+    #ifdef WIN_32
+    #define DLLDIR  __declspec(dllimport)   // import DLL information
+    #else
+    #define DLLDIR
+    #endif
 #endif 
 
 #ifdef _DEBUG

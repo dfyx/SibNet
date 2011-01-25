@@ -3,7 +3,7 @@
 
 #include <networking.h>
 #include <blocksocket.h>
-#include <pstdint.h>
+#include <stdint_wrap.h>
 #include <nl.h>
 #include <pthread.h>
 #include <vector>
@@ -16,7 +16,7 @@ public:
 	// callback definition, as class
 	class AddClientSocketCallback
 	{
-		friend ListenerSocket;
+		friend class ListenerSocket;
 
 	private:
 		virtual void OnAddBlockSocket(BlockSocket*) = 0;

@@ -5,7 +5,7 @@
 #include <blockinterpreter.h>
 #include <map>
 
-#include <pstdint.h>
+#include <stdint_wrap.h>
 
 DLLDIR enum
 {
