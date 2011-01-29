@@ -15,6 +15,70 @@
     #endif
 #endif 
 
+#include <stdint_wrap.h>
+
+// Byte order stuff
+inline bool mustswap()
+{
+	static const uint16_t x = 1;
+	return *((const char*) &x) == 1;
+}
+
+inline uint8_t swap(uint8_t input)
+{
+	return input;
+}
+
+inline uint16_t swap(uint16_t input)
+{
+	if(mustswap())
+	{
+		return ((input >> 8) & 0x00FFU) |
+			   ((input << 8) & 0x00FFU);
+	}
+	else
+	{
+		return input;
+	}
+}
+
+inline uint32_t swap(uint32_t input)
+{
+	if(mustswap())
+	{
+		return ((input >> 24) & 0x000000FFUL) |
+			   ((input >>  8) & 0x0000FF00UL) |
+			   ((input <<  8) & 0x00FF0000UL) |
+			   ((input << 24) & 0xFF000000UL);
+	}
+	else
+	{
+		return input;
+	}
+}
+
+#ifdef UINT64_MAX
+inline uint64_t swap(uint64_t input)
+{
+	if(mustswap())
+	{
+		return ((input >> 56) & 0x00000000000000FFLLU) |
+			   ((input >> 40) & 0x000000000000FF00LLU) |
+			   ((input >> 24) & 0x0000000000FF0000LLU) |
+			   ((input >>  8) & 0x00000000FF000000LLU) |
+			   ((input <<  8) & 0x000000FF00000000LLU) |
+			   ((input << 24) & 0x0000FF0000000000LLU) |
+			   ((input << 40) & 0x00FF000000000000LLU) |
+			   ((input << 56) & 0xFF00000000000000LLU);
+	}
+	else
+	{
+		return input;
+	}
+}
+#endif
+// End of byte order stuff
+
 #ifdef _DEBUG
 #include <iostream>
 #define DEBUG_ERROR(x)						\

@@ -16,6 +16,9 @@ DLLDIR enum
 	BLOCKTYPE_FIRSTFREE
 };
 
+// Definitions for blocksize and stuff
+DLLDIR typedef uint16_t blocksize_t;
+
 class DLLDIR Block
 {
   // Associations
@@ -27,8 +30,8 @@ private:
 
 public:
     virtual uint16_t GetTypeID() = 0;
-    virtual size_t Serialize(char** p_ppcBuffer) = 0;
-    virtual void Deserialize(char* p_pcBuffer, size_t p_iSize) = 0;
+    virtual blocksize_t Serialize(char** p_ppcBuffer) = 0;
+    virtual void Deserialize(char* p_pcBuffer, blocksize_t p_iSize) = 0;
     virtual void Execute(BlockInterpreter* p_inInterpreter);
 
 	// Block type management

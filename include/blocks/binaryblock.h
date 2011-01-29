@@ -10,20 +10,20 @@ class DLLDIR BinaryBlock: public Block
 // Attributes
 protected:
 	char* m_pcData;
-	int m_iSize;
+	blocksize_t m_iSize;
 
 // Operations
 public:
 	BinaryBlock();
-	BinaryBlock(char* p_pcBuffer, int p_iSize);
+	BinaryBlock(char* p_pcBuffer, blocksize_t p_iSize);
 	~BinaryBlock();
 
-    int GetData(char** p_ppcData);
-    void SetData(char* p_pcData, int p_iSize);
-    int GetDataSize();
+    blocksize_t GetData(char** p_ppcData);
+    void SetData(char* p_pcData, blocksize_t p_iSize);
+    blocksize_t GetDataSize();
 
-	virtual size_t Serialize(char** p_ppcBuffer);
-    virtual void Deserialize(char* p_pcBuffer, size_t p_iSize);
+	virtual blocksize_t Serialize(char** p_ppcBuffer);
+    virtual void Deserialize(char* p_pcBuffer, blocksize_t p_iSize);
 
 	MAKE_BLOCKTYPE(BinaryBlock, BLOCKTYPE_BINARY);
 };

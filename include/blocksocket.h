@@ -2,9 +2,6 @@
 #define BLOCKSOCKET_H
 
 #include <blocks/block.h>
-#include <nl.h>
-#include <pthread.h>
-#include <semaphore.h>
 #include <queue>
 #include <string>
 
@@ -13,16 +10,12 @@ class BlockSocket
 private:
 	std::queue<Block*> m_inWriteQueue, m_inReadQueue;
 
-	NLsocket m_inSocket;
-	pthread_t m_iWriteThread, m_iReadThread;
-
-	pthread_mutex_t m_iWriteMutex, m_iReadMutex;
-	sem_t m_iWriteSemaphore, m_iReadSemaphore;
+	struct BlockSocketData *m_psData;
 
 	bool m_bConnected, m_bDisconnect;
 public:
 	BlockSocket();
-	BlockSocket(NLsocket p_inSocket);
+	BlockSocket(void *p_pinSocket);
 	~BlockSocket();
 
 	bool Connect(std::string p_strAddress, uint16_t p_sPort);

@@ -26,10 +26,7 @@ public:
 private:
 	bool m_bListening;
 
-	NLsocket m_inSocket;
-	pthread_t m_iListenThread;
-
-	pthread_mutex_t m_iClientMutex;
+	struct ListenerSocketData *m_psData;
 
 	AddClientSocketCallback* m_pAddClientSocketCB;
 

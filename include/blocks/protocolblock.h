@@ -10,7 +10,7 @@ class DLLDIR ProtocolBlock: public Block {
   // Attributes
 protected:
 	std::string m_strName;
-	long m_iVersion;
+	uint32_t m_iVersion;
   // Operations
 public:
 	ProtocolBlock();
@@ -18,8 +18,8 @@ public:
 	std::string getName();
     long getVersion();
 
-	virtual size_t Serialize(char** p_ppcBuffer);
-	virtual void Deserialize(char* p_pcBuffer, size_t p_iSize);
+	virtual blocksize_t Serialize(char** p_ppcBuffer);
+	virtual void Deserialize(char* p_pcBuffer, blocksize_t p_iSize);
 
 	MAKE_BLOCKTYPE(ProtocolBlock, BLOCKTYPE_PROTOCOL)
 };

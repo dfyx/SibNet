@@ -26,9 +26,9 @@ long ProtocolBlock::getVersion()
 	return m_iVersion;
 }
 
-size_t ProtocolBlock::Serialize(char** p_ppcBuffer)
+blocksize_t ProtocolBlock::Serialize(char** p_ppcBuffer)
 {
-	long iConvertedVersion = htonl(m_iVersion);
+	uint32_t iConvertedVersion = swap(m_iVersion);
 
 	*p_ppcBuffer = new char[4 + m_strName.length()];
 	memcpy(*p_ppcBuffer, &iConvertedVersion, 4);
@@ -37,9 +37,9 @@ size_t ProtocolBlock::Serialize(char** p_ppcBuffer)
 	return m_strName.length() + 4;
 }
 
-void ProtocolBlock::Deserialize(char* p_pcBuffer, size_t p_iSize)
+void ProtocolBlock::Deserialize(char* p_pcBuffer, blocksize_t p_iSize)
 {
 	memcpy(&m_iVersion, p_pcBuffer, 4);
-	m_iVersion = ntohl(m_iVersion);
+	m_iVersion = swap(m_iVersion);
 	m_strName = string(p_pcBuffer + 4, p_iSize - 4);
 }

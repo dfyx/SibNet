@@ -9,7 +9,7 @@ BinaryBlock::BinaryBlock()
 	m_iSize = 0;
 }
 
-BinaryBlock::BinaryBlock(char* p_pcData, int p_iSize)
+BinaryBlock::BinaryBlock(char* p_pcData, blocksize_t p_iSize)
 {
 	// Set new data
 	m_pcData = new char[p_iSize];
@@ -24,7 +24,7 @@ BinaryBlock::~BinaryBlock()
 	delete m_pcData;
 }
 
-int BinaryBlock::GetData(char** p_ppcData)
+blocksize_t BinaryBlock::GetData(char** p_ppcData)
 {
 	if(p_ppcData != NULL)
 	{
@@ -34,11 +34,12 @@ int BinaryBlock::GetData(char** p_ppcData)
 	}
 	else
 	{
+		// TODO: throw exception
 		return -1;
 	}
 }
 
-void BinaryBlock::SetData(char* p_pcData, int p_iSize)
+void BinaryBlock::SetData(char* p_pcData, blocksize_t p_iSize)
 {
 	// Delete old data
 	if (m_pcData != NULL)
@@ -54,17 +55,17 @@ void BinaryBlock::SetData(char* p_pcData, int p_iSize)
 	m_iSize = p_iSize;
 }
 
-int BinaryBlock::GetDataSize()
+blocksize_t BinaryBlock::GetDataSize()
 {
 	return m_iSize;
 }
 
-size_t BinaryBlock::Serialize(char** p_ppcBuffer)
+blocksize_t BinaryBlock::Serialize(char** p_ppcBuffer)
 {
 	return GetData(p_ppcBuffer);
 }
 
-void BinaryBlock::Deserialize(char* p_pcBuffer, size_t p_iSize)
+void BinaryBlock::Deserialize(char* p_pcBuffer, blocksize_t p_iSize)
 {
 	SetData(p_pcBuffer, p_iSize);
 }

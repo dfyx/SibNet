@@ -20,8 +20,8 @@ public:
 	std::string GetData();
 	void SetData(std::string p_strData);
 
-	virtual size_t Serialize(char** p_ppcBuffer);
-    virtual void Deserialize(char* p_pcBuffer, size_t p_iSize);
+	virtual blocksize_t Serialize(char** p_ppcBuffer);
+    virtual void Deserialize(char* p_pcBuffer, blocksize_t p_iSize);
 
 	MAKE_BLOCKTYPE(StringBlock, BLOCKTYPE_STRING);
 };

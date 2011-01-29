@@ -20,8 +20,8 @@ protected:
 
 public:
 	virtual uint16_t GetTypeID() = 0;
-	virtual size_t Serialize(char** p_ppcBuffer);
-	virtual void Deserialize(char* p_pcBuffer, size_t p_iSize);
+	virtual blocksize_t Serialize(char** p_ppcBuffer);
+	virtual void Deserialize(char* p_pcBuffer, blocksize_t p_iSize);
 };
 
 #endif

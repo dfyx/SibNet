@@ -24,7 +24,7 @@ void StringBlock::SetData(string p_strData)
 	m_strData = p_strData;
 }
 
-size_t StringBlock::Serialize(char** p_ppcBuffer)
+blocksize_t StringBlock::Serialize(char** p_ppcBuffer)
 {
 	if(p_ppcBuffer != NULL)
 	{
@@ -39,7 +39,7 @@ size_t StringBlock::Serialize(char** p_ppcBuffer)
 	}
 }
 
-void StringBlock::Deserialize(char* p_pcBuffer, size_t p_iSize)
+void StringBlock::Deserialize(char* p_pcBuffer, blocksize_t p_iSize)
 {
 	m_strData = string(p_pcBuffer, p_iSize);
 }
