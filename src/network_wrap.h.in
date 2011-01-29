@@ -1,0 +1,37 @@
+#cmakedefine CMAKE_HAVE_WINSOCK2
+
+#ifndef CMAKE_HAVE_WINSOCK2
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#else
+#include <winsock2.h>
+#endif
+
+#include <string>
+
+namespace Net
+{
+    typedef int Socket;
+    
+    enum ConnectionType
+    {
+        TYPE_TCP,
+        TYPE_UDP
+    };
+    
+    bool init();
+
+    void shutdown();
+    
+    void close(Socket socket);
+    
+    Socket connect(std::string address, unsigned short port, ConnectionType connectionType, int domain = AF_INET);
+    Socket listen(unsigned int port, ConnectionType connectionType, int domain = AF_INET);
+    Socket accept(Socket sock);
+    
+    int send(Socket sock, const void *data, size_t length);
+    int read(Socket sock, void *data, size_t length);
+};

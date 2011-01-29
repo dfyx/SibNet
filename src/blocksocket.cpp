@@ -1,6 +1,6 @@
 #include <blocksocket.h>
 #include <sched.h>
-#include <nl.h>
+#include <network_wrap.h>
 #include <pthread.h>
 #include <semaphore.h>
 
@@ -13,7 +13,7 @@ using namespace std;
 
 struct BlockSocketData
 {
-	NLsocket m_inSocket;
+	Net::Socket m_inSocket;
 	pthread_t m_iWriteThread, m_iReadThread;
 
 	pthread_mutex_t m_iWriteMutex, m_iReadMutex;
@@ -23,17 +23,12 @@ struct BlockSocketData
 BlockSocket::BlockSocket()
 {
 	// Initialize HawkNL
-	if(!nlInit())
+	if(!Net::init())
 	{
 		DEBUG_ERROR("Could not init HawkNL.")
 	}
 
-	nlSelectNetwork(NL_IP);
-	nlEnable(NL_BLOCKING_IO);
-
-	m_psData = new BlockSocketData;
-
-	m_psData->m_inSocket = NL_INVALID;
+	m_psData->m_inSocket = -1;
 	m_bConnected = false;
 	m_bDisconnect = false;
 
@@ -43,17 +38,17 @@ BlockSocket::BlockSocket()
 	sem_init(&m_psData->m_iReadSemaphore, 0, 0);
 }
 
-BlockSocket::BlockSocket(void *p_pinSocket)
+BlockSocket::BlockSocket(int p_inSocket)
 {
-	// Initialize HawkNL to make sure the destructor doesn't cause problems
-	if(!nlInit())
+	// Initialize network
+	if(!Net::init())
 	{
-		DEBUG_ERROR("Could not init HawkNL.")
+		DEBUG_ERROR("Could not init network.")
 	}
 
 	m_psData = new BlockSocketData;
 
-	m_psData->m_inSocket = *((NLsocket*) p_pinSocket);
+	m_psData->m_inSocket = (Net::Socket) p_inSocket;
 	m_bConnected = true;
 	m_bDisconnect = false;
 
@@ -70,7 +65,7 @@ BlockSocket::BlockSocket(void *p_pinSocket)
 BlockSocket::~BlockSocket()
 {
 	// Close socket
-	nlClose(m_psData->m_inSocket);
+	Net::close(m_psData->m_inSocket);
 
 	if(IsConnected())
 	{
@@ -85,38 +80,21 @@ BlockSocket::~BlockSocket()
 
 	delete m_psData;
 
-	// This is okay, even for multiple sockets. HawkNL has an internal counter
-	nlShutdown();
+	// This is okay, even for multiple sockets. There is an internal counter
+	Net::shutdown();
 }
 
 bool BlockSocket::Connect(string p_strAddress, uint16_t p_sPort)
 {
 	// Close old socket. If there is no old socket, nothing happens
-	nlClose(m_psData->m_inSocket);
+	Net::close(m_psData->m_inSocket);
 	m_bConnected = false;
 
-	// Resolve address
-	NLaddress inAddress;
-	if(!nlGetAddrFromName((const NLchar*) p_strAddress.c_str(), &inAddress))
-	{
-		DEBUG_ERROR("Could not resolve address.")
-		return false;
-	}
-
-	nlSetAddrPort(&inAddress, p_sPort);
-
 	// Open new socket
-	m_psData->m_inSocket = nlOpen(0, NL_RELIABLE);
-	if(m_psData->m_inSocket == NL_INVALID)
+	m_psData->m_inSocket = Net::connect(p_strAddress, p_sPort, Net::TYPE_TCP);
+	if(m_psData->m_inSocket == -1)
 	{
 		DEBUG_ERROR("Could not open socket.")
-		return false;
-	}
-
-	// Connect
-	if(!nlConnect(m_psData->m_inSocket, &inAddress))
-	{
-		DEBUG_ERROR("Could not connect.")
 		return false;
 	}
 
@@ -201,7 +179,7 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 			if(pinSocket->m_bDisconnect)
 			{
 				pinSocket->m_bConnected = false;
-				nlClose(pinSocket->m_psData->m_inSocket);
+				Net::close(pinSocket->m_psData->m_inSocket);
 
 				// Stop read loop
 				pthread_cancel(iReadThread);
@@ -224,10 +202,10 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 
 			// Write type id
 			size_t iWritten = 0;
-			uint16_t sType = nlSwaps(pinBlock->GetTypeID());
+			uint16_t sType = swap(pinBlock->GetTypeID());
 			while(iWritten < 2)
 			{
-				int iWriteResult = nlWrite(pinSocket->m_psData->m_inSocket, &sType + iWritten, 2 - iWritten);
+				int iWriteResult = Net::send(pinSocket->m_psData->m_inSocket, &sType + iWritten, 2 - iWritten);
 				if(iWriteResult >= 0)
 				{
 					iWritten += iWriteResult;
@@ -249,7 +227,7 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 			blocksize_t sSize = swap(iSize);
 			while(iWritten < sizeof(blocksize_t))
 			{
-				int iWriteResult = nlWrite(pinSocket->m_psData->m_inSocket, &sSize + iWritten, 2 - iWritten);
+				int iWriteResult = Net::send(pinSocket->m_psData->m_inSocket, &sSize + iWritten, 2 - iWritten);
 				if(iWriteResult >= 0)
 				{
 					iWritten += iWriteResult;
@@ -270,7 +248,7 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 			iWritten = 0;
 			while(iWritten < iSize)
 			{
-				int iWriteResult = nlWrite(pinSocket->m_psData->m_inSocket, pcBuffer + iWritten, iSize - iWritten);
+				int iWriteResult = Net::send(pinSocket->m_psData->m_inSocket, pcBuffer + iWritten, iSize - iWritten);
 				if(iWriteResult >= 0)
 				{
 					iWritten += iWriteResult;
@@ -314,7 +292,7 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 #ifdef _DEBUG
 			cout << "- Starting to read type." << endl;
 #endif
-			iRead += nlRead(pinSocket->m_psData->m_inSocket, &sType + iRead, 2 - iRead);
+			iRead += Net::read(pinSocket->m_psData->m_inSocket, &sType + iRead, 2 - iRead);
 
 			// Could not read everything: wait
 			if(iRead < 2)
@@ -322,7 +300,7 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 				sched_yield();
 			}
 		}
-		sType = nlSwaps(sType);
+		sType = swap(sType);
 
 		// Read size
 		iRead = 0;
@@ -332,7 +310,7 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 #ifdef _DEBUG
 			cout << "- Starting to read size." << endl;
 #endif
-			iRead += nlRead(pinSocket->m_psData->m_inSocket, &sSize + iRead, 2 - iRead);
+			iRead += Net::read(pinSocket->m_psData->m_inSocket, &sSize + iRead, 2 - iRead);
 
 			// Could not read everything: wait
 			if(iRead < sizeof(blocksize_t))
@@ -350,7 +328,7 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 #ifdef _DEBUG
 			cout << "- Starting to read data." << endl;
 #endif
-			iRead += nlRead(pinSocket->m_psData->m_inSocket, pcBuffer + iRead, iSize - iRead);
+			iRead += Net::read(pinSocket->m_psData->m_inSocket, pcBuffer + iRead, iSize - iRead);
 
 			// Could not read everything: wait
 			if(iRead < iSize)

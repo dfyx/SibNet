@@ -4,7 +4,6 @@
 #include <networking.h>
 #include <blocksocket.h>
 #include <stdint_wrap.h>
-#include <nl.h>
 #include <pthread.h>
 #include <vector>
 

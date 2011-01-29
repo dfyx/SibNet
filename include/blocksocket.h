@@ -15,7 +15,7 @@ private:
 	bool m_bConnected, m_bDisconnect;
 public:
 	BlockSocket();
-	BlockSocket(void *p_pinSocket);
+	BlockSocket(int p_inSocket);
 	~BlockSocket();
 
 	bool Connect(std::string p_strAddress, uint16_t p_sPort);

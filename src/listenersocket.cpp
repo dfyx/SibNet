@@ -1,12 +1,12 @@
 #include <listenersocket.h>
-#include <nl.h>
+#include <network_wrap.h>
 #include <pthread.h>
 
 using namespace std;
 
 struct ListenerSocketData
 {
-	NLsocket m_inSocket;
+	Net::Socket m_inSocket;
 	pthread_t m_iListenThread;
 
 	pthread_mutex_t m_iClientMutex;
@@ -14,20 +14,17 @@ struct ListenerSocketData
 
 ListenerSocket::ListenerSocket()
 {
-	// Initialize HawkNL
-	if(!nlInit())
+	// Initialize network
+	if(!Net::init())
 	{
-		DEBUG_ERROR("Could not init HawkNL.")
+		DEBUG_ERROR("Could not init network.")
 	}
-
-	nlSelectNetwork(NL_IP);
-	nlEnable(NL_BLOCKING_IO);
 
 	m_bListening = false;
 
 	m_psData = new ListenerSocketData;
 
-	m_psData->m_inSocket = NL_INVALID;
+	m_psData->m_inSocket = -1;
 
 	m_pAddClientSocketCB = NULL;
 
@@ -37,7 +34,7 @@ ListenerSocket::ListenerSocket()
 ListenerSocket::~ListenerSocket()
 {
 	// Close socket
-	nlClose(m_psData->m_inSocket);
+	Net::close(m_psData->m_inSocket);
 
 	if(IsListening())
 	{
@@ -49,24 +46,17 @@ ListenerSocket::~ListenerSocket()
 
 	delete m_psData;
 
-	// This is okay, even for multiple sockets. HawkNL has an internal counter
-	nlShutdown();
+	// This is okay, even for multiple sockets. There is an internal counter
+	Net::shutdown();
 }
 
 bool ListenerSocket::Listen(uint16_t p_sPort)
 {
 	DEBUG_NOTICE("Trying to listen")
-	m_psData->m_inSocket = nlOpen(p_sPort, NL_RELIABLE);
+	m_psData->m_inSocket = Net::listen(p_sPort, Net::TYPE_TCP);
 
-	if(m_psData->m_inSocket == NL_INVALID)
+	if(m_psData->m_inSocket == -1)
 	{
-		DEBUG_ERROR("Could not open socket.")
-		return false;
-	}
-
-	if(!nlListen(m_psData->m_inSocket))
-	{
-		nlClose(m_psData->m_inSocket);
 		DEBUG_ERROR("Could not listen.")
 		return false;
 	}
@@ -119,13 +109,13 @@ void *ListenerSocket::ListenLoop(void *p_pinSocket)
 
 	while(pinListener->IsListening())
 	{
-		NLsocket inSocket = nlAcceptConnection(pinListener->m_psData->m_inSocket);
-		if(inSocket != NL_INVALID)
+		Net::Socket inSocket = Net::accept(pinListener->m_psData->m_inSocket);
+		if(inSocket >= 0)
 		{
-			pinListener->AddBlockSocket(new BlockSocket((void*) &inSocket));
+			pinListener->AddBlockSocket(new BlockSocket((int) inSocket));
 			DEBUG_NOTICE("Accepted new connection.")
 		}
-		else if(nlGetError() != NL_NO_PENDING)
+		else
 		{
 			DEBUG_ERROR("Failed to accept")
 		}
