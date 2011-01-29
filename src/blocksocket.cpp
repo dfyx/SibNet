@@ -28,6 +28,8 @@ BlockSocket::BlockSocket()
 		DEBUG_ERROR("Could not init HawkNL.")
 	}
 
+    m_psData = new BlockSocketData;
+
 	m_psData->m_inSocket = -1;
 	m_bConnected = false;
 	m_bDisconnect = false;

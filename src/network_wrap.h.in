@@ -26,7 +26,7 @@ namespace Net
 
     void shutdown();
     
-    void close(Socket socket);
+    void close(Socket sock);
     
     Socket connect(std::string address, unsigned short port, ConnectionType connectionType, int domain = AF_INET);
     Socket listen(unsigned int port, ConnectionType connectionType, int domain = AF_INET);

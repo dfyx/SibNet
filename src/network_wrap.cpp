@@ -13,9 +13,13 @@ namespace Net
     {
     }
     
-    void close(Socket socket)
+    void close(Socket sock)
     {
-        close(socket);
+        if(sock < 0)
+        {
+            return;
+        }
+        ::close(sock);
     }
 };
 #else
@@ -48,9 +52,13 @@ namespace Net
         }
     }
     
-    void close(Socket socket)
+    void close(Socket sock)
     {
-        closesocket(socket);
+        if(sock < 0)
+        {
+            return;
+        }
+        ::closesocket(sock);
     }
 };
 #endif
