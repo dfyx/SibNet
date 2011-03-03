@@ -3,15 +3,22 @@
 using namespace std;
 
 pthread_mutex_t MutexHelper::m_iListMutex;
+bool MutexHelper::inited = false;
 map<pthread_mutex_t*, MutexState> MutexHelper::m_mList;
 
 void MutexHelper::Init()
 {
 	pthread_mutex_init(&m_iListMutex, NULL);
+	inited = true;
 }
 
 MutexHelper::MutexHelper(pthread_mutex_t *p_piMutex)
 {
+	if(!inited)
+	{
+		Init();
+	}
+
 	pthread_mutex_lock(&m_iListMutex);
 	m_piMutex = p_piMutex;
 	

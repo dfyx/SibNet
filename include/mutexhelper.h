@@ -16,6 +16,7 @@ private:
 	pthread_mutex_t *m_piMutex;
 	
 	static pthread_mutex_t m_iListMutex;
+	static bool inited;
 	static std::map<pthread_mutex_t*, MutexState> m_mList;
 public:
 	static void Init();
