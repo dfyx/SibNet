@@ -7,19 +7,35 @@
 
 class BlockSocket
 {
+public:
+	enum QueueBehavior
+	{
+		QUEUE_CLEAR,
+		QUEUE_FLUSH_WAIT,
+		QUEUE_FLUSH_ASYNC
+	};
 private:
 	std::queue<Block*> m_inWriteQueue, m_inReadQueue;
 
 	struct BlockSocketData *m_psData;
 
-	bool m_bConnected, m_bDisconnect;
+	enum State
+	{
+		STATE_DISCONNECTED,
+		STATE_CONNECTING,
+		STATE_CONNECTED,
+		STATE_DISCONNECTING
+	};
+	
+	State m_eState;
+	QueueBehavior m_eWriteBehavior;
 public:
 	BlockSocket();
 	BlockSocket(int p_inSocket);
 	~BlockSocket();
 
 	bool Connect(std::string p_strAddress, uint16_t p_sPort);
-	void Disconnect();
+	void Disconnect(QueueBehavior p_eWriteBehavior);
 
 	bool IsConnected();
 
@@ -28,6 +44,9 @@ public:
 
 	static void *WriteLoop(void *p_pinSocket);
 	static void *ReadLoop(void *p_pinSocket);
+	
+	void ClearReadQueue();
+	void ClearWriteQueue();
 };
 
 #endif // BLOCKSOCKET_H

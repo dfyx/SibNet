@@ -79,13 +79,17 @@ inline uint64_t swap(uint64_t input)
 #endif
 // End of byte order stuff
 
-#ifdef _DEBUG
+#define _DEBUGSIBNET 1
+#ifdef _DEBUGSIBNET
+#include <string>
 #include <iostream>
+#include <errno.h>
+#include <cstring>
 #define DEBUG_ERROR(x)						\
-	std::cerr << "! " << x << std::endl;	\
-	std::cerr << "  Error code was " << nlGetError() << ": " << (char*) nlGetErrorStr(nlGetError())	<< "." << std::endl; \
+	std::cout << "! " << x << std::endl << std::flush;	\
+	std::cerr << "  Error code was " << errno << ": " << strerror(errno) << "." << std::endl; /*\
 	if(nlGetError() == NL_SYSTEM_ERROR)		\
-	std::cerr << "  System error code was " << nlGetSystemError() << ": " << (char*) nlGetSystemErrorStr(nlGetSystemError()) << "." << std::endl;
+	std::cerr << "  System error code was " << nlGetSystemError() << ": " << (char*) nlGetSystemErrorStr(nlGetSystemError()) << "." << std::endl;*/
 
 #define DEBUG_NOTICE(x)						\
 	std::cout << "? " << x << std::endl;

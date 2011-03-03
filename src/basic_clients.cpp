@@ -1,6 +1,5 @@
 #include <basic_clients.h>
 
-
 Client_Events::Client_Events()
 {
 	m_pinSocket = new BlockSocket();
@@ -17,9 +16,8 @@ Client_Events::Client_Events(BlockSocket *p_pinSocket)
 Client_Events::~Client_Events()
 {
 	bEnd = true;
-	pthread_join(m_iListenThread, NULL);
-
 	delete m_pinSocket;
+	pthread_join(m_iListenThread, NULL);
 }
 
 
@@ -49,11 +47,11 @@ void* Client_Events::ReadLoop(void* p_pClient)
 
 	while(!pinClient->bEnd)
 	{
-		pinClient->OnReceive(pinClient->m_pinSocket->ReadBlock(true));
-		
-		// TODO: ....
-		//Sleep(100);
-		//sched_yield();
+        Block *pinBlock = pinClient->m_pinSocket->ReadBlock(true);
+        if(pinBlock)
+        {
+		    pinClient->OnReceive(pinBlock);
+	    }
 	}
 
 	return NULL;

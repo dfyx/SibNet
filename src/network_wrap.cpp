@@ -1,3 +1,4 @@
+#include <networking.h>
 #include <network_wrap.h>
 
 #ifndef CMAKE_HAVE_WINSOCK2
@@ -92,8 +93,25 @@ namespace Net
         
         sockaddr_in addr;
         memset(&addr, 0, sizeof(addr));
-        unsigned long ip_addr = inet_addr(address.c_str());
-        memcpy((char*) &addr.sin_addr, &ip_addr, sizeof(ip_addr));
+
+		// Resolve address
+		unsigned long ip_addr;
+		if((ip_addr = inet_addr(address.c_str())) != INADDR_NONE)
+		{
+        	memcpy((char*) &addr.sin_addr, &ip_addr, sizeof(ip_addr));
+		}
+		else
+		{
+			// For localhost etc.
+			hostent *host_info = gethostbyname(address.c_str());
+			if(host_info == NULL)
+			{
+				DEBUG_ERROR("Unknown host: " + address);
+				return -1;
+			}
+			
+			memcpy(&addr.sin_addr, host_info->h_addr, host_info->h_length);
+		}
         addr.sin_family = domain;
         addr.sin_port = htons(port);
         
@@ -105,7 +123,7 @@ namespace Net
         }
         
         // Connect
-        if(connect(sock, (sockaddr*) &addr, sizeof(addr)) < 0)
+		if(::connect(sock, (sockaddr*) &addr, sizeof(addr)) < 0)
         {
             close(sock);
             return -1;

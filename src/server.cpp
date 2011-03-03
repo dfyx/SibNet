@@ -20,6 +20,11 @@ bool Server::Listen(unsigned short p_sPort)
 	return m_pinSocket->Listen(p_sPort);
 }
 
+void Server::Stop()
+{
+	m_pinSocket->StopListening();
+}
+
 vector<BlockSocket*> Server::GetBlockSockets()
 {
 	return m_pinSocket->GetBlockSockets();

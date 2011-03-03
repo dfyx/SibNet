@@ -76,6 +76,7 @@ bool ListenerSocket::IsListening()
 void ListenerSocket::StopListening()
 {
 	m_bListening = false;
+	Net::close(m_psData->m_inSocket);
 }
 
 void ListenerSocket::AddBlockSocket(BlockSocket *p_pinSocket)
@@ -122,6 +123,6 @@ void *ListenerSocket::ListenLoop(void *p_pinSocket)
 
 		sched_yield();
 	}
-
+	
 	return NULL;
 }

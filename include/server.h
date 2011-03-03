@@ -24,6 +24,7 @@ public:
 	std::vector<BlockSocket*> GetBlockSockets();
 
 	bool Listen(unsigned short p_sPort);
+	void Stop();
 };
 
 

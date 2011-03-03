@@ -26,7 +26,7 @@ bool Client::Connect(string p_strAddress, unsigned short p_sPort)
 
 void Client::Disconnect()
 {
-	m_pinSocket->Disconnect();
+	m_pinSocket->Disconnect(BlockSocket::QUEUE_CLEAR);
 }
 
 void Client::SendBlock(Block *p_pinBlock)

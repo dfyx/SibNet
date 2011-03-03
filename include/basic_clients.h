@@ -1,10 +1,7 @@
-#ifndef BASIC_CLIENS_H
-#define BASIC_CLIENS_H
-
+#ifndef BASIC_CLIENTS_H
+#define BASIC_CLIENTS_H
 
 #include <client.h>
-#include <pthread.h>
-
 
 class DLLDIR Client_Events : protected Client
 {

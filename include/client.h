@@ -1,7 +1,6 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-
 #include <blocks/block.h>
 #include <networking.h>
 #include <blocksocket.h>
