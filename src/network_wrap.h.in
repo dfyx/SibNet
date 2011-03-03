@@ -32,6 +32,6 @@ namespace Net
     Socket listen(unsigned int port, ConnectionType connectionType, int domain = AF_INET);
     Socket accept(Socket sock);
     
-    int send(Socket sock, const void *data, size_t length);
-    int read(Socket sock, void *data, size_t length);
+    int send(Socket sock, const char *data, size_t length);
+    int recv(Socket sock, char *data, size_t length);
 };
