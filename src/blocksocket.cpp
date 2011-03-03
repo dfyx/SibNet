@@ -117,6 +117,8 @@ void BlockSocket::Disconnect(QueueBehavior p_eWriteBehavior)
 		m_eWriteBehavior = p_eWriteBehavior;
 		
 		pthread_cancel(m_psData->m_iReadThread);
+		// Release waiting clients for reading
+		pthread_cond_broadcast(&m_psData->m_iReadCond);
 		
 		if(p_eWriteBehavior != QUEUE_FLUSH_ASYNC)
 		{
@@ -167,8 +169,11 @@ Block* BlockSocket::ReadBlock(bool p_bWait)
 		// Else wait if user wants to
 		if(pthread_cond_wait(&m_psData->m_iReadCond, &m_psData->m_iReadMutex) == 0)
 		{
-		    pinResult = m_inReadQueue.front();
-			m_inReadQueue.pop();
+			if(!m_inReadQueue.empty())
+			{
+				pinResult = m_inReadQueue.front();
+				m_inReadQueue.pop();
+			}
 		}
 	}	
 	pthread_mutex_unlock(&m_psData->m_iReadMutex);
@@ -391,6 +396,8 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 			else
 			{
 			    DEBUG_ERROR("Error reading block type.")
+				pinSocket->Disconnect(QUEUE_CLEAR);
+				return NULL;
 			}
 
 			// Could not read everything: wait
@@ -423,6 +430,8 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 			else
 			{
 			    DEBUG_ERROR("Error reading block size.")
+				pinSocket->Disconnect(QUEUE_CLEAR);
+				return NULL;
 			}
 			
 			// Could not read everything: wait
@@ -456,6 +465,9 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 			else
 			{
 			    DEBUG_ERROR("Error reading block data.")
+				delete[] pcBuffer;
+				pinSocket->Disconnect(QUEUE_CLEAR);
+				return NULL;
 			}
 			
 			// Could not read everything: wait
