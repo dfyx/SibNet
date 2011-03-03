@@ -134,14 +134,14 @@ namespace Net
         }
     }
     
-    int send(Socket sock, const void *data, size_t length)
+    int send(Socket sock, const char *data, size_t length)
     {
         return ::send(sock, data, length, 0);
     }
     
-    int read(Socket sock, void *data, size_t length)
+    int recv(Socket sock, char *data, size_t length)
     {
-        return ::read(sock, data, length);
+        return ::recv(sock, data, length, NULL);
     }
     
     Socket listen(unsigned int port, ConnectionType connectionType, int domain)
@@ -201,7 +201,7 @@ namespace Net
     Socket accept(Socket sock)
     {
         sockaddr addr;
-        socklen_t len = sizeof(addr);
+        int len = sizeof(addr);
         return ::accept(sock, &addr, &len);
     }
 };

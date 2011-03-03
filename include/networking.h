@@ -62,14 +62,14 @@ inline uint64_t swap(uint64_t input)
 {
 	if(mustswap())
 	{
-		return ((input >> 56) & 0x00000000000000FFLLU) |
-			   ((input >> 40) & 0x000000000000FF00LLU) |
-			   ((input >> 24) & 0x0000000000FF0000LLU) |
-			   ((input >>  8) & 0x00000000FF000000LLU) |
-			   ((input <<  8) & 0x000000FF00000000LLU) |
-			   ((input << 24) & 0x0000FF0000000000LLU) |
-			   ((input << 40) & 0x00FF000000000000LLU) |
-			   ((input << 56) & 0xFF00000000000000LLU);
+		return ((input >> 56) & 0x00000000000000FFULL) |
+			   ((input >> 40) & 0x000000000000FF00ULL) |
+			   ((input >> 24) & 0x0000000000FF0000ULL) |
+			   ((input >>  8) & 0x00000000FF000000ULL) |
+			   ((input <<  8) & 0x000000FF00000000ULL) |
+			   ((input << 24) & 0x0000FF0000000000ULL) |
+			   ((input << 40) & 0x00FF000000000000ULL) |
+			   ((input << 56) & 0xFF00000000000000ULL);
 	}
 	else
 	{
@@ -86,7 +86,7 @@ inline uint64_t swap(uint64_t input)
 #include <errno.h>
 #include <cstring>
 #define DEBUG_ERROR(x)						\
-	std::cout << "! " << x << std::endl << std::flush;	\
+	std::cout << "! " << x << std::endl << std::flush;	/*\
 	std::cerr << "  Error code was " << errno << ": " << strerror(errno) << "." << std::endl; /*\
 	if(nlGetError() == NL_SYSTEM_ERROR)		\
 	std::cerr << "  System error code was " << nlGetSystemError() << ": " << (char*) nlGetSystemErrorStr(nlGetSystemError()) << "." << std::endl;*/

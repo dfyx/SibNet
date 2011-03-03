@@ -281,7 +281,7 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 			DEBUG_NOTICE("Starting to send block type.")
 			while(iWritten < 2)
 			{
-				int iWriteResult = Net::send(pinSocket->m_psData->m_inSocket, &sType + iWritten, 2 - iWritten);
+				int iWriteResult = Net::send(pinSocket->m_psData->m_inSocket, (const char*) &sType + iWritten, 2 - iWritten);
 				if(iWriteResult >= 0)
 				{
 					iWritten += iWriteResult;
@@ -305,7 +305,7 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 			DEBUG_NOTICE("Starting to send block size.")
 			while(iWritten < sizeof(blocksize_t))
 			{
-				int iWriteResult = Net::send(pinSocket->m_psData->m_inSocket, &sSize + iWritten, 2 - iWritten);
+				int iWriteResult = Net::send(pinSocket->m_psData->m_inSocket, (const char*) &sSize + iWritten, 2 - iWritten);
 				if(iWriteResult >= 0)
 				{
 					iWritten += iWriteResult;
@@ -376,7 +376,7 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 		DEBUG_NOTICE("Starting to read type.")
 		while(iRead < 2)
 		{
-			int iReadResult = Net::read(pinSocket->m_psData->m_inSocket, &sType + iRead, 2 - iRead);
+			int iReadResult = Net::recv(pinSocket->m_psData->m_inSocket, (char*) &sType + iRead, 2 - iRead);
 			
 			if(iReadResult > 0)
 			{
@@ -391,7 +391,6 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 			else
 			{
 			    DEBUG_ERROR("Error reading block type.")
-			    DEBUG_ERROR(errno << ": " << strerror(errno))
 			}
 
 			// Could not read everything: wait
@@ -409,7 +408,7 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 		DEBUG_NOTICE("Starting to read size")
 		while(iRead < sizeof(blocksize_t))
 		{
-			int iReadResult = Net::read(pinSocket->m_psData->m_inSocket, &sSize + iRead, 2 - iRead);
+			int iReadResult = Net::recv(pinSocket->m_psData->m_inSocket, (char*) &sSize + iRead, 2 - iRead);
 
             if(iReadResult > 0)
 			{
@@ -441,7 +440,7 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 		DEBUG_NOTICE("Starting to read data.")
 		while(iRead < iSize)
 		{
-			int iReadResult = Net::read(pinSocket->m_psData->m_inSocket, pcBuffer + iRead, iSize - iRead);
+			int iReadResult = Net::recv(pinSocket->m_psData->m_inSocket, pcBuffer + iRead, iSize - iRead);
 
             if(iReadResult > 0)
 			{
