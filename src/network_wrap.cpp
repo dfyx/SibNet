@@ -25,6 +25,7 @@ namespace Net
 };
 #else
 
+typedef int socklen_t;
 namespace Net
 {
     static unsigned long initCount = 0;
@@ -201,7 +202,7 @@ namespace Net
     Socket accept(Socket sock)
     {
         sockaddr addr;
-        int len = sizeof(addr);
+        socklen_t len = sizeof(addr);
         return ::accept(sock, &addr, &len);
     }
 };
