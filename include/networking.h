@@ -34,7 +34,7 @@ inline uint16_t swap(uint16_t input)
 	if(mustswap())
 	{
 		return ((input >> 8) & 0x00FFU) |
-			   ((input << 8) & 0x00FFU);
+			   ((input << 8) & 0xFF00U);
 	}
 	else
 	{
