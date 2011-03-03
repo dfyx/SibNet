@@ -14,7 +14,7 @@ struct BlockSocketData
 	pthread_t m_iWriteThread, m_iReadThread;
 
 	pthread_mutex_t m_iWriteMutex, m_iReadMutex, m_iStateMutex;
-	sem_t m_iWriteSemaphore, m_iReadSemaphore;
+	pthread_cond_t m_iWriteCond, m_iReadCond;
 };
 
 BlockSocket::BlockSocket()
@@ -33,8 +33,8 @@ BlockSocket::BlockSocket()
 	pthread_mutex_init(&m_psData->m_iWriteMutex, NULL);
 	pthread_mutex_init(&m_psData->m_iReadMutex, NULL);
 	pthread_mutex_init(&m_psData->m_iStateMutex, NULL);
-	sem_init(&m_psData->m_iWriteSemaphore, 0, 0);
-	sem_init(&m_psData->m_iReadSemaphore, 0, 0);
+	pthread_cond_init(&m_psData->m_iWriteCond, NULL);
+	pthread_cond_init(&m_psData->m_iReadCond, NULL);
 }
 
 BlockSocket::BlockSocket(int p_inSocket)
@@ -53,24 +53,25 @@ BlockSocket::BlockSocket(int p_inSocket)
 	pthread_mutex_init(&m_psData->m_iWriteMutex, NULL);
 	pthread_mutex_init(&m_psData->m_iReadMutex, NULL);
 	pthread_mutex_init(&m_psData->m_iStateMutex, NULL);
+	pthread_cond_init(&m_psData->m_iWriteCond, NULL);
+	pthread_cond_init(&m_psData->m_iReadCond, NULL);
 
 	// Start worker threads
 	pthread_create(&m_psData->m_iWriteThread, NULL, BlockSocket::WriteLoop, (void*) this);
 	pthread_create(&m_psData->m_iReadThread, NULL, BlockSocket::ReadLoop, (void*) this);
-	sem_init(&m_psData->m_iWriteSemaphore, 0, 0);
-	sem_init(&m_psData->m_iReadSemaphore, 0, 0);
 }
 
 BlockSocket::~BlockSocket()
 {
 	Disconnect(QUEUE_CLEAR);
+	ClearWriteQueue();
 	ClearReadQueue();
 
 	pthread_mutex_destroy(&m_psData->m_iWriteMutex);
 	pthread_mutex_destroy(&m_psData->m_iReadMutex);
 	pthread_mutex_destroy(&m_psData->m_iStateMutex);
-	sem_destroy(&m_psData->m_iWriteSemaphore);
-	sem_destroy(&m_psData->m_iReadSemaphore);
+	pthread_cond_destroy(&m_psData->m_iWriteCond);
+	pthread_cond_destroy(&m_psData->m_iReadCond);
 
 	delete m_psData;
 
@@ -115,15 +116,14 @@ void BlockSocket::Disconnect(QueueBehavior p_eWriteBehavior)
 		m_eState = STATE_DISCONNECTING;
 		m_eWriteBehavior = p_eWriteBehavior;
 		
-		pthread_join(m_psData->m_iReadThread, NULL);
-		ClearReadQueue();
+		pthread_cancel(m_psData->m_iReadThread);
 		
 		if(p_eWriteBehavior != QUEUE_FLUSH_ASYNC)
 		{
+			// Unlock semaphore so write thread may exit
+			pthread_cond_signal(&m_psData->m_iWriteCond);
 			pthread_join(m_psData->m_iWriteThread, NULL);
 			ClearWriteQueue();
-			// Unlock semaphore so write thread may exit
-			sem_post(&m_psData->m_iWriteSemaphore);
 			
 			Net::close(m_psData->m_inSocket);
 			m_eState = STATE_DISCONNECTED;
@@ -138,41 +138,40 @@ bool BlockSocket::IsConnected()
 
 void BlockSocket::WriteBlock(Block *p_pinBlock)
 {
- 	DEBUG_NOTICE("Adding block to write queue.");
 	if(p_pinBlock == NULL)
 	{
 		return;
 	}
 	
+	DEBUG_NOTICE("Adding block to write queue.");
+	
 	pthread_mutex_lock(&m_psData->m_iWriteMutex);
 	m_inWriteQueue.push(p_pinBlock);
+	pthread_cond_signal(&m_psData->m_iWriteCond);
 	pthread_mutex_unlock(&m_psData->m_iWriteMutex);
-	sem_post(&m_psData->m_iWriteSemaphore);
 }
 
 Block* BlockSocket::ReadBlock(bool p_bWait)
 {
 	Block *pinResult = NULL;
-	if(p_bWait)
+	
+	pthread_mutex_lock(&m_psData->m_iReadMutex);
+	if(!m_inReadQueue.empty())
 	{
-		if(sem_wait(&m_psData->m_iReadSemaphore) < 0)
+		// if there already is something in the queue, just return it
+		pinResult = m_inReadQueue.front();
+		m_inReadQueue.pop();
+	}
+	else if(p_bWait)
+	{
+		// Else wait if user wants to
+		if(pthread_cond_wait(&m_psData->m_iReadCond, &m_psData->m_iReadMutex) == 0)
 		{
-		    // Socket probably gone
-            return NULL;
+		    pinResult = m_inReadQueue.front();
+			m_inReadQueue.pop();
 		}
-		
-		pthread_mutex_lock(&m_psData->m_iReadMutex);
-		pinResult = m_inReadQueue.front();
-		m_inReadQueue.pop();
-		pthread_mutex_unlock(&m_psData->m_iReadMutex);
-	}
-	else if(sem_trywait(&m_psData->m_iReadSemaphore) == 0)
-	{
-		pthread_mutex_lock(&m_psData->m_iReadMutex);
-		pinResult = m_inReadQueue.front();
-		m_inReadQueue.pop();
-		pthread_mutex_unlock(&m_psData->m_iReadMutex);
-	}
+	}	
+	pthread_mutex_unlock(&m_psData->m_iReadMutex);
 
 	return pinResult;
 }
@@ -188,14 +187,14 @@ void BlockSocket::ClearReadQueue()
 		return;
 	}
 	
-	while(sem_trywait(&m_psData->m_iReadSemaphore) == 0)
+	pthread_mutex_lock(&m_psData->m_iReadMutex);	
+	// There should be a more elegant way but I couldn't find one in the header
+	DEBUG_NOTICE("Removing " << m_inReadQueue.size() << " objects from read queue");
+	while(!m_inReadQueue.empty())
 	{
-		pthread_mutex_lock(&m_psData->m_iReadMutex);
-		Block *pinBlock = m_inReadQueue.front();
 		m_inReadQueue.pop();
-		delete pinBlock;
-		pthread_mutex_unlock(&m_psData->m_iReadMutex);
 	}
+	pthread_mutex_unlock(&m_psData->m_iReadMutex);
 }
 
 void BlockSocket::ClearWriteQueue()
@@ -210,14 +209,14 @@ void BlockSocket::ClearWriteQueue()
 		return;
 	}
 	
-	while(sem_trywait(&m_psData->m_iWriteSemaphore) == 0)
+	pthread_mutex_lock(&m_psData->m_iWriteMutex);	
+	// There should be a more elegant way but I couldn't find one in the header
+	DEBUG_NOTICE("Removing " << m_inWriteQueue.size() << " objects from write queue");
+	while(!m_inWriteQueue.empty())
 	{
-		pthread_mutex_lock(&m_psData->m_iWriteMutex);
-		Block *pinBlock = m_inReadQueue.front();
-		m_inReadQueue.pop();
-		delete pinBlock;
-		pthread_mutex_unlock(&m_psData->m_iWriteMutex);
+		m_inWriteQueue.pop();
 	}
+	pthread_mutex_unlock(&m_psData->m_iWriteMutex);
 }
 
 void *BlockSocket::WriteLoop(void *p_pinSocket)
@@ -236,25 +235,37 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 	{
 		Block *pinBlock = NULL;
 
-		// Wait until there is something in the queue
-		if(sem_wait(&pinSocket->m_psData->m_iWriteSemaphore) < 0)
-		{
-		    // Something went wrong: stop this thread NOW!
-			DEBUG_ERROR("Error waiting for write semaphore");
-			pinSocket->Disconnect(QUEUE_CLEAR);
-            return NULL;
-		}
 		pthread_mutex_lock(&pinSocket->m_psData->m_iWriteMutex);
-		pinBlock = pinSocket->m_inWriteQueue.front();
-		pinSocket->m_inWriteQueue.pop();
+		if(pinSocket->m_inWriteQueue.empty())
+		{
+			// Wait if queue is empty
+			if(pthread_cond_wait(&pinSocket->m_psData->m_iWriteCond, &pinSocket->m_psData->m_iWriteMutex) != 0)
+			{
+				// Something went wrong, disconnect and return
+				DEBUG_ERROR("Error waiting for write queue");
+				pinSocket->Disconnect(QUEUE_CLEAR);
+	            return NULL;
+			}
+		}
+		
+		// Check if still empty
+		if(pinSocket->m_inWriteQueue.empty())
+		{
+			// empty queue usually means disconnect, just let the loop condition do its work
+			pthread_mutex_unlock(&pinSocket->m_psData->m_iWriteMutex);
+			continue;
+		}
+		else
+		{
+			pinBlock = pinSocket->m_inWriteQueue.front();
+			pinSocket->m_inWriteQueue.pop();
+		}
 		pthread_mutex_unlock(&pinSocket->m_psData->m_iWriteMutex);
 		
-
 		if(pinBlock == NULL)
 		{
-			// Something went wrong: stop this thread NOW!
-			pinSocket->Disconnect(QUEUE_CLEAR);
-            return NULL;
+			// Should never happen, but who knows...
+			continue;
 		}
 		else
 		{
@@ -314,7 +325,7 @@ void *BlockSocket::WriteLoop(void *p_pinSocket)
 			// Write data
 			iWritten = 0;
 			
-			DEBUG_NOTICE("Starting to send block type.")
+			DEBUG_NOTICE("Starting to send block data.")
 			while(iWritten < iSize)
 			{
 				int iWriteResult = Net::send(pinSocket->m_psData->m_inSocket, pcBuffer + iWritten, iSize - iWritten);
@@ -464,8 +475,8 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
     		// Add to queue
     		pthread_mutex_lock(&pinSocket->m_psData->m_iReadMutex);
     		pinSocket->m_inReadQueue.push(pinBlock);
+			pthread_cond_signal(&pinSocket->m_psData->m_iReadCond);
     		pthread_mutex_unlock(&pinSocket->m_psData->m_iReadMutex);
-    		sem_post(&pinSocket->m_psData->m_iReadSemaphore);
 		}
 		else
 		{
