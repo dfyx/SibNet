@@ -29,6 +29,9 @@ private:
 	
 	State m_eState;
 	QueueBehavior m_eWriteBehavior;
+	
+	static void *WriteLoop(void *p_pinSocket);
+	static void *ReadLoop(void *p_pinSocket);
 public:
 	BlockSocket();
 	BlockSocket(int p_inSocket);
@@ -38,12 +41,13 @@ public:
 	void Disconnect(QueueBehavior p_eWriteBehavior);
 
 	bool IsConnected();
+	State GetState();
 
 	void WriteBlock(Block* p_pinBlock);
 	Block* ReadBlock(bool p_bWait = true);
-
-	static void *WriteLoop(void *p_pinSocket);
-	static void *ReadLoop(void *p_pinSocket);
+	
+	size_t GetWriteQueueSize();
+	size_t GetReadQueueSize();
 	
 	void ClearReadQueue();
 	void ClearWriteQueue();

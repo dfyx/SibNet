@@ -500,3 +500,18 @@ void *BlockSocket::ReadLoop(void *p_pinSocket)
 
 	return NULL;
 }
+
+BlockSocket::State BlockSocket::GetState()
+{
+	return m_eState;
+}
+
+size_t BlockSocket::GetWriteQueueSize()
+{
+	return m_inWriteQueue.size();
+}
+
+size_t BlockSocket::GetReadQueueSize()
+{
+	return m_inReadQueue.size();
+}
